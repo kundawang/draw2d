@@ -32,16 +32,17 @@ type GraphicContext struct {
 	glyphBuf   *truetype.GlyphBuf
 	svg        *Svg
 	DPI        int
+	groupStack []*Group
 }
 
 func NewGraphicContext(svg *Svg) *GraphicContext {
 	gc := &GraphicContext{
-		draw2dbase.NewStackGraphicContext(),
-		draw2d.GetGlobalFontCache(),
-		draw2dbase.NewGlyphCache(),
-		&truetype.GlyphBuf{},
-		svg,
-		92,
+		StackGraphicContext: draw2dbase.NewStackGraphicContext(),
+		FontCache:           draw2d.GetGlobalFontCache(),
+		glyphCache:          draw2dbase.NewGlyphCache(),
+		glyphBuf:            &truetype.GlyphBuf{},
+		svg:                 svg,
+		DPI:                 92,
 	}
 	return gc
 }
@@ -137,13 +138,14 @@ func (gc *GraphicContext) DrawImage(image image.Image) {
 func (gc *GraphicContext) ClearRect(x1, y1, x2, y2 int) {
 	mask := gc.newMask(x1, y1, x2-x1, y2-y1)
 
+	container := gc.currentContainer()
 	newGroup := &Group{
-		Groups: gc.svg.Groups,
+		Groups: *container,
 		Mask:   "url(#" + mask.Id + ")",
 	}
 
 	// replace groups with new masked group
-	gc.svg.Groups = []*Group{newGroup}
+	*container = []*Group{newGroup}
 }
 
 // NOTE following  two functions and soe other further below copied from dwra2d{img|gl}
@@ -297,9 +299,19 @@ func (gc *GraphicContext) newGroup(drawType drawType) *Group {
 	group.Transform = toSvgTransform(gc.Current.Tr)
 
 	// attach
-	gc.svg.Groups = append(gc.svg.Groups, &group)
+	container := gc.currentContainer()
+	*container = append(*container, &group)
 
 	return &group
+}
+
+// currentContainer returns the group list new elements are appended to:
+// the innermost open transparency group, or the svg root when no group is open.
+func (gc *GraphicContext) currentContainer() *[]*Group {
+	if n := len(gc.groupStack); n > 0 {
+		return &gc.groupStack[n-1].Groups
+	}
+	return &gc.svg.Groups
 }
 
 // creates new mask attached to svg

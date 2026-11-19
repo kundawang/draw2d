@@ -39,6 +39,7 @@ type GraphicContext struct {
 	glyphBuf         *truetype.GlyphBuf
 	DPI              int
 	Filter           ImageFilter
+	groups           []groupLayer
 }
 
 // ImageFilter defines the type of filter to use
@@ -81,6 +82,7 @@ func NewGraphicContextWithPainter(img draw.Image, painter Painter) *GraphicConte
 		&truetype.GlyphBuf{},
 		dpi,
 		BilinearFilter,
+		nil,
 	}
 	return gc
 }

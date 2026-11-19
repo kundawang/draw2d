@@ -56,6 +56,7 @@ func NewSvg() *Svg {
 type Group struct {
 	FillStroke
 	Transform string   `xml:"transform,attr,omitempty"`
+	Opacity   string   `xml:"opacity,attr,omitempty"`
 	Groups    []*Group `xml:"g"`
 	Paths     []*Path  `xml:"path"`
 	Texts     []*Text  `xml:"text"`
